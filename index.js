@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const port = process.env.PORT || 5000;
 const app = express()
@@ -9,7 +10,6 @@ app.use(cors())
 app.use(express.json())
 
 //! mongodb client
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.hqjnl.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
@@ -47,6 +47,22 @@ async function run() {
             const result = await fruitCollection.updateOne(query, updateFruit, filter)
             res.send(result)
         })
+
+        //! delete fruit
+        app.delete('/fruit/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const result = await fruitCollection.deleteOne(query)
+            res.send(result)
+        })
+
+        //! Post fruit
+        app.post('/fruit', async (req, res) => {
+            const query = req.body;
+            const result = await fruitCollection.insertOne(query)
+            res.send(result)
+        })
+
     }
     finally {
         // await client.close()
