@@ -9,7 +9,7 @@ app.use(cors())
 app.use(express.json())
 
 //! mongodb client
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.hqjnl.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
@@ -26,6 +26,26 @@ async function run() {
             const cursor = fruitCollection.find(query)
             const fruit = await cursor.toArray()
             res.send(fruit)
+        })
+
+        //! put fruit
+        app.put('/fruit/:id', async (req, res) => {
+            const id = req.params.id;
+            const newFruit = req.body;
+            const query = { _id: ObjectId(id) }
+            const filter = { upsert: true }
+            const updateFruit = {
+                $set: {
+                    itemName: newFruit.itemName,
+                    image: newFruit.image,
+                    description: newFruit.description,
+                    price: newFruit.price,
+                    quantity: newFruit.quantity,
+                    supplierName: newFruit.supplierName
+                }
+            }
+            const result = await fruitCollection.updateOne(query, updateFruit, filter)
+            res.send(result)
         })
     }
     finally {
