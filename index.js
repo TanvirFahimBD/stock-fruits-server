@@ -20,6 +20,16 @@ async function run() {
         const fruitCollection = client.db('stockFruits').collection('fruits')
 
         // ************************ fruit collection *****************
+
+        //! get fruit base on user email
+        app.get('/fruit/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email }
+            const cursor = fruitCollection.find(query)
+            const fruit = await cursor.toArray()
+            res.send(fruit)
+        })
+
         //! get fruit
         app.get('/fruit', async (req, res) => {
             const query = {}
