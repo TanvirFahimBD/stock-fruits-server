@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const jwt = require('jsonwebtoken');
 require('dotenv').config()
 const port = process.env.PORT || 5000;
 const app = express()
@@ -71,6 +72,15 @@ async function run() {
             const query = req.body;
             const result = await fruitCollection.insertOne(query)
             res.send(result)
+        })
+
+        // **************** JWT Verify request
+        app.post('/login', (req, res) => {
+            const user = req.body;
+            const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+                expiresIn: '1d'
+            });
+            res.send({ accessToken })
         })
 
     }
