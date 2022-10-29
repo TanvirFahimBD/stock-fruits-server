@@ -10,6 +10,22 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
+//! middle tare
+function verifyJWT(req, res, next) {
+    const authHeader = req?.headers?.authorization;
+    if (!authHeader) {
+        return res.status(401).send({ message: 'unauthorized access' })
+    }
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(401).send({ message: 'forbidden access' })
+        }
+        req.decoded = decoded;
+        next()
+    })
+}
+
 //! mongodb client
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.hqjnl.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
@@ -23,20 +39,40 @@ async function run() {
         // ************************ fruit collection *****************
 
         //! get fruit base on user email
-        app.get('/fruit/:email', async (req, res) => {
-            const email = req.params.email;
-            const query = { email: email }
-            const cursor = fruitCollection.find(query)
-            const fruit = await cursor.toArray()
-            res.send(fruit)
+        app.get('/fruit/:email', verifyJWT, async (req, res) => {
+            const email = req?.params?.email;
+            const decodedEmail = req?.decoded?.email;
+            if (email === decodedEmail) {
+                const query = { email: email }
+                const cursor = fruitCollection.find(query)
+                const fruits = await cursor.toArray()
+                res.send(fruits)
+            } else {
+                res.status(403).send({ message: 'forbidden' })
+            }
         })
 
         //! get fruit
         app.get('/fruit', async (req, res) => {
+            const page = parseFloat(req.query.page);
+            const size = parseFloat(req.query.size);
             const query = {}
             const cursor = fruitCollection.find(query)
-            const fruit = await cursor.toArray()
-            res.send(fruit)
+            let fruits;
+            if (page || size) {
+                fruits = await cursor.skip(page * size).limit(size).toArray();
+            } else {
+                fruits = await cursor.toArray()
+            }
+            res.send(fruits)
+        })
+
+        //! get fruit count
+        app.get('/fruitCount', async (req, res) => {
+            const query = {}
+            const cursor = fruitCollection.find(query)
+            const count = await cursor.count()
+            res.send({ count })
         })
 
         //! put fruit
@@ -75,6 +111,7 @@ async function run() {
         })
 
         // **************** JWT Verify request
+        //! login api for token generate & send client side
         app.post('/login', (req, res) => {
             const user = req.body;
             const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
