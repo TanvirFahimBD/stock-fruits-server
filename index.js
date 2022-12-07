@@ -108,7 +108,7 @@ async function run() {
             res.send(result)
         })
 
-        // **************** JWT Verify request
+        // **************** JWT Verify request ****************
         //! login api for token generate & send client side
         app.post('/login', (req, res) => {
             const user = req.body;
@@ -117,7 +117,6 @@ async function run() {
             });
             res.send({ accessToken })
         })
-
     }
     finally {
         // await client.close()
